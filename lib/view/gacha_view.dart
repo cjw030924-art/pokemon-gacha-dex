@@ -5,6 +5,24 @@ import '../data/partner_state.dart';
 import '../data/coin_state.dart';
 import '../model/pokemon.dart';
 
+// 🔥 1세대 전설 / 환상 포켓몬 ID
+const Set<int> legendaryIds = {
+  144, // 프리져
+  145, // 썬더
+  146, // 파이어
+  150, // 뮤츠
+};
+
+const Set<int> mythicalIds = {
+  151, // 뮤
+};
+
+int _weightFor(Pokemon p) {
+  if (legendaryIds.contains(p.id)) return 5; // 전설
+  if (mythicalIds.contains(p.id)) return 5; // 환상
+  return 10; // 일반
+}
+
 class GachaView extends StatefulWidget {
   const GachaView({super.key});
 
@@ -170,7 +188,21 @@ class _GachaViewState extends State<GachaView> {
 
   Pokemon _drawRandomPokemon() {
     final rand = Random();
-    return gen1Pokemons[rand.nextInt(gen1Pokemons.length)];
+
+    // 전체 가중치 합
+    final totalWeight = gen1Pokemons.fold<int>(
+      0,
+      (sum, p) => sum + _weightFor(p),
+    );
+
+    int r = rand.nextInt(totalWeight);
+
+    for (final p in gen1Pokemons) {
+      r -= _weightFor(p);
+      if (r < 0) return p;
+    }
+
+    return gen1Pokemons.last; // 안전장치
   }
 
   Future<void> _showResult(BuildContext context, Pokemon pokemon) async {
