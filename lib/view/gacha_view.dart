@@ -5,7 +5,39 @@ import '../data/partner_state.dart';
 import '../data/coin_state.dart';
 import '../model/pokemon.dart';
 
-// 🔥 1세대 전설 / 환상 포켓몬 ID
+enum PokemonRarity { normal, legendary, mythical }
+
+PokemonRarity _getRarity(Pokemon p) {
+  if (mythicalIds.contains(p.id)) return PokemonRarity.mythical;
+  if (legendaryIds.contains(p.id)) return PokemonRarity.legendary;
+  return PokemonRarity.normal;
+}
+
+Color _rarityColor(PokemonRarity rarity) {
+  switch (rarity) {
+    case PokemonRarity.legendary:
+      return Colors.orangeAccent;
+    case PokemonRarity.mythical:
+      return Colors.purpleAccent;
+    case PokemonRarity.normal:
+    default:
+      return Colors.grey;
+  }
+}
+
+String _rarityTitle(PokemonRarity rarity) {
+  switch (rarity) {
+    case PokemonRarity.legendary:
+      return '🌟 전설 포켓몬!';
+    case PokemonRarity.mythical:
+      return '✨ 환상 포켓몬!';
+    case PokemonRarity.normal:
+    default:
+      return '포켓몬 획득!';
+  }
+}
+
+//  1세대 전설 / 환상 포켓몬 ID
 const Set<int> legendaryIds = {
   144, // 프리져
   145, // 썬더
@@ -208,6 +240,8 @@ class _GachaViewState extends State<GachaView> {
   Future<void> _showResult(BuildContext context, Pokemon pokemon) async {
     final bool isNew = !pokemon.isCaught;
 
+    final rarity = _getRarity(pokemon);
+
     if (isNew) {
       await catchPokemon(pokemon);
     } else {
@@ -219,29 +253,79 @@ class _GachaViewState extends State<GachaView> {
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isNew ? '새 포켓몬!' : '중복 포켓몬'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: _rarityColor(rarity),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _rarityTitle(rarity),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/images/pokemon/gen1/${pokemon.name}.png',
-              width: 120,
+            // 🔲 포켓몬 배경 카드 (예전 느낌)
+            Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: _rarityColor(rarity).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/pokemon/gen1/${pokemon.name}.png',
+                  width: rarity == PokemonRarity.normal ? 120 : 150,
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              isNew
-                  ? pokemon.name
-                  : '${pokemon.name}\n(+${duplicateReward} 코인)',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+
+            const SizedBox(height: 16),
+
+            // 포켓몬 이름 (흰색 텍스트)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              decoration: BoxDecoration(
+                color: _rarityColor(rarity),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                pokemon.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
+
+            if (!isNew) ...[
+              const SizedBox(height: 8),
+              Text(
+                '+$duplicateReward 코인',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ],
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
+            child: const Text('확인', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
